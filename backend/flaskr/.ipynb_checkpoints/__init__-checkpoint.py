@@ -133,20 +133,43 @@ def create_app(test_config=None):
     """
     @app.route('/questions',methods=['POST'])
     def addQuestions():
-        try:
-            body=request.get_json()
-            newQuestion=body.get('question',None)
-            newAnswer=body.get('answer',None)
-            newCategory=body.get('category',None)
-            newDifficulty=body.get('difficulty',None)
-            question=Question(question=newQuestion,answer=newAnswer,category=newCategory,difficulty=newDifficulty)
-            question.insert()
-        except:
-            abort(422)
+        body = request.get_json()
+        newQuestion = body.get("question", None)
+        newAnswer = body.get("answer", None)
+        newCategory = body.get("category", None)
+        newDifficulty = body.get("difficulty", None)
+        search = body.get("searchTerm", None)
 
-        return jsonify({
-            'success':True
-        })
+        if search:
+            filteredQuestions = Question.query.order_by(Question.id).filter(
+                Question.question.ilike("%{}%".format(search))
+            )
+
+            currentQuestions = paginateQuestion(request, filteredQuestions)
+
+            return jsonify({
+            'success': True,
+            'questions': currentQuestions,
+            'totalQuestions': len(Question.query.all()),
+            'currentCategory': 'History'
+            })
+        else:
+            question = Question(
+                question=newQuestion, 
+                answer=newAnswer, 
+                category=newCategory, 
+                difficulty=newDifficulty
+                )
+
+            question.insert()
+            questions = Question.query.order_by(Question.id).all()
+            current_questions = paginateQuestion(request, questions)
+
+            return jsonify({
+                'success': True,
+                'total_questions': len(questions),
+                'questions': current_questions
+            })
     
     """
     @TODO:
@@ -182,15 +205,18 @@ def create_app(test_config=None):
     """
     @app.route('/categories/<int:category_id>/questions',methods=['GET'])
     def retrieveQuestionsByCategory(category_id):
-        category=Category.query.filter(Category.id==category_id).one_or_none()
-        if category:
-            selection=Question.query.filter_by(category=str(category_id)).all()
-            questions=paginateQuestion(request,selection)
+        try:
+            filteredQuestions = Question.query.filter(
+                Question.category == category_id).all()
+            paginatedQuestions = paginateQuestion(request, filteredQuestions)
+
             return jsonify({
-                'questions':questions,
-                'CurrentCategory':category.type
+                'questions': paginatedQuestions,
+                'totalQuestions': len(filteredQuestions),
+                'currentCategory': Category.query.get(category_id).type
             })
-        else:
+
+        except:
             abort(404)
 
     """

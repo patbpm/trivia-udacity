@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flaskr import create_app
 from models import setup_db, Question, Category
 
-from settings import DB_NAME_TEST, DB_USER, DB_PASSWORD
+from settings import  DB_USER, DB_PASSWORD
 
 
 class TriviaTestCase(unittest.TestCase):
@@ -16,7 +16,7 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
-        self.database_name = DB_NAME_TEST
+        self.database_name = 'trivia_test'
         self.database_path ="postgres://{}:{}@{}/{}".format(DB_USER, DB_PASSWORD,'localhost:5432', self.database_name)
         setup_db(self.app, self.database_path)
 
@@ -35,7 +35,7 @@ class TriviaTestCase(unittest.TestCase):
     TODO
     Write at least one test for each test for successful operation and for expected errors.
     """
-     # Test Get Categories
+    # Test Get Categories
     def test_get_categories(self):
         res = self.client().get('/categories')
         data = json.loads(res.data)
@@ -55,6 +55,66 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['totalQuestions'])
         self.assertTrue(len(data['questions']))
         self.assertTrue(len(data['categories']))
+    
+    # Test Get Categories With Wrong Endpoint
+    def test_404_get_categories(self):
+        res = self.client().get('/categoriess')
+
+        self.assertEqual(res.status_code, 404)
+        
+    # Test Get Questions With Wrong Endpoint
+    def test_404_get_questions(self):
+        res = self.client().get('/questionss')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], "Not found")
+
+    # Test Pagination Beyond valid Page
+    def test_404_sent_request_beyond_valid_page(self):
+        res = self.client().get('/questions?page=500')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Not found')
+
+    # Test Delete Question Endpoint
+    def test_delete_question(self):
+        res = self.client().delete('/questions/1')
+        data = json.loads(res.data)
+      
+        question = Question.query.filter(Question.id == 1).one_or_none()
+        self.assertEqual(question, None)
+        self.assertEqual(data['success'], True)
+
+    # Test Delete Question With Wrong ID
+    def test_422_delete_question(self):
+        res = self.client().delete('/questions/0')
+        data = json.loads(res.data)
+      
+        question = Question.query.filter(Question.id == 0).one_or_none()
+        self.assertEqual(question, None)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Unprocessable')
+
+    # Test Post Question Endpoint
+    def test_insert_question(self):
+        res = self.client().post(
+            '/questions', 
+            json={
+                'question': 'What program is this?', 
+                'answer': 'ALX-T',
+                'difficulty': 1,
+                'category': 1
+            })
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        
+    
         
     
     
