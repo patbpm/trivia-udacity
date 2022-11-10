@@ -51,8 +51,10 @@ def create_app(test_config=None):
     for all available categories.
     """
     @app.route('/categories',methods=['GET'])
+    
     def getCategories():
-        categories=Category.query.order_by(Category.id).all()
+        #categories=Category.query.order_by(Category.id).all()
+        categories = Category.query.all()
         categoriesDict={}
         for category in categories:
                 categoriesDict[category.id] = category.type
@@ -189,6 +191,7 @@ def create_app(test_config=None):
         if selection:
             questions=paginateQuestion(request, selection)
             return jsonify({
+                'success': True,
                 'questions':questions,
                 'total_questions':len(selection)
             })
@@ -211,6 +214,7 @@ def create_app(test_config=None):
             paginatedQuestions = paginateQuestion(request, filteredQuestions)
 
             return jsonify({
+                'success': True,
                 'questions': paginatedQuestions,
                 'totalQuestions': len(filteredQuestions),
                 'currentCategory': Category.query.get(category_id).type

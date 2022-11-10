@@ -113,8 +113,73 @@ class TriviaTestCase(unittest.TestCase):
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        
     
+     # Test get paginated book    
+    def test_get_paginated_books(self):
+        res = self.client().get('/questions')
+        data = json.loads(res.data)
+
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertTrue(len(data['questions']))
+     
+    # Test 404 requesting beyond available page
+    def test_404_requesting_beyond_available_page(self):
+        response = self.client().get("/questions?page=100000")
+        data = json.loads(response.data)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Not found')
+        
+     # Test select categories
+    
+    def test_select_category(self):
+        response = self.client().get('/categories/1/questions')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['success'], True)
+        
+     # Test select categories Errors
+    def test_select_category_error(self):
+        response = self.client().get('/categories/category/questions')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Not found')
+
+
+    def test_search_question(self):
+        find = {'searchTerm': 'a'}
+        response = self.client().post('/questions/search', json=find)
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertTrue(len(data['questions']))
+    
+     # Test search termas empty
+
+    def test_400_search_question_searchterm_empty(self):
+        find = {'searchTerm': ''}
+        response = self.client().post('/questions/search', json=find)
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], 'Bad Request')
+        
+     # Test search terms without result
+    
+    def test_book_search_without_results(self):
+        find = {'searchTerm': 'm4jrimfkrjnfr'}
+        response = self.client().post('/questions/search', json=find)
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['success'], True)
+        self.assertIsNotNone((data['questions']))
         
     
     
